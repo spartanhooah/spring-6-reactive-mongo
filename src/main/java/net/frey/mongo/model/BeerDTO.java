@@ -2,13 +2,12 @@ package net.frey.mongo.model;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -16,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 public class BeerDTO {
 
-    private Integer id;
+    private String id;
 
     @NotBlank
     @Size(min = 3, max = 255)
@@ -27,6 +26,7 @@ public class BeerDTO {
 
     @Size(max = 25)
     private String upc;
+
     private Integer quantityOnHand;
     private BigDecimal price;
     private LocalDateTime createdDate;

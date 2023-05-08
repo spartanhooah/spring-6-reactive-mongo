@@ -1,20 +1,23 @@
 package net.frey.mongo.domain;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Document
 public class Beer {
+    @Id
+    private String id;
 
-    private Integer id;
     private String beerName;
     private String beerStyle;
     private String upc;

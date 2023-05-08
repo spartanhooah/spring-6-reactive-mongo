@@ -7,5 +7,6 @@ import org.mapstruct.Mapper;
 @Mapper
 public interface CustomerMapper {
     CustomerDTO entityToDto(Customer customer);
+
     Customer dtoToEntity(CustomerDTO customer);
 }
