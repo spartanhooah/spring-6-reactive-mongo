@@ -1,10 +1,14 @@
 package net.frey.mongo.bootstrap;
 
+import static java.time.LocalDateTime.now;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import net.frey.mongo.domain.Beer;
+import net.frey.mongo.domain.Customer;
 import net.frey.mongo.repository.BeerRepository;
+import net.frey.mongo.repository.CustomerRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -12,12 +16,15 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class BootstrapData implements CommandLineRunner {
     private final BeerRepository beerRepository;
+    private final CustomerRepository customerRepository;
 
     @Override
     public void run(String... args) {
-        beerRepository
+        beerRepository.deleteAll().doOnSuccess(success -> loadBeerData(now())).subscribe();
+
+        customerRepository
                 .deleteAll()
-                .doOnSuccess(success -> loadBeerData(LocalDateTime.now()))
+                .doOnSuccess(success -> loadCustomerData(now()))
                 .subscribe();
     }
 
@@ -57,6 +64,27 @@ public class BootstrapData implements CommandLineRunner {
                 beerRepository.save(beer1).subscribe();
                 beerRepository.save(beer2).subscribe();
                 beerRepository.save(beer3).subscribe();
+            }
+        });
+    }
+
+    private void loadCustomerData(LocalDateTime now) {
+        customerRepository.count().subscribe(count -> {
+            if (count == 0) {
+                Customer customer1 = Customer.builder()
+                        .customerName("Bobby Tables")
+                        .createdDate(now)
+                        .lastModifiedDate(now)
+                        .build();
+
+                Customer customer2 = Customer.builder()
+                        .customerName("Joan Rivers")
+                        .createdDate(now)
+                        .lastModifiedDate(now)
+                        .build();
+
+                customerRepository.save(customer1).subscribe();
+                customerRepository.save(customer2).subscribe();
             }
         });
     }

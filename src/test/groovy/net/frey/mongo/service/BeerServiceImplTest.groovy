@@ -8,6 +8,8 @@ import reactor.test.StepVerifier
 import spock.lang.Specification
 import reactor.core.publisher.Mono
 
+import static reactor.core.publisher.Mono.just
+
 @SpringBootTest
 class BeerServiceImplTest extends Specification {
     @Autowired
@@ -24,7 +26,7 @@ class BeerServiceImplTest extends Specification {
 
     def "save beer"() {
         when:
-        def savedMono = beerService.saveBeer(Mono.just(beerDto))
+        def savedMono = beerService.saveBeer(just(beerDto))
 
         then:
         StepVerifier.create(savedMono)
@@ -46,7 +48,7 @@ class BeerServiceImplTest extends Specification {
     }
 
     def getSavedBeer() {
-        beerService.saveBeer(Mono.just(buildTestDto())).block()
+        beerService.saveBeer(just(buildTestDto())).block()
     }
 
     def buildTestDto() {

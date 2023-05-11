@@ -57,6 +57,7 @@ public class BeerServiceImpl implements BeerService {
 
                     return foundBeer;
                 })
+                .flatMap(repository::save)
                 .map(mapper::entityToDto);
     }
 

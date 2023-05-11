@@ -1,48 +1,47 @@
 package net.frey.mongo.endpoint
 
-import net.frey.mongo.model.BeerDTO
+import net.frey.mongo.model.CustomerDTO
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.springframework.web.util.UriComponentsBuilder
 import spock.lang.Specification
 import spock.lang.Stepwise
 
-import static net.frey.mongo.endpoint.BeerHandler.BEER_PATH
 import static org.hamcrest.Matchers.equalTo
 import static org.springframework.web.util.UriComponentsBuilder.fromPath
 import static reactor.core.publisher.Mono.just
+import static net.frey.mongo.endpoint.CustomerHandler.CUSTOMER_PATH
 
 @Stepwise
 @SpringBootTest
 @AutoConfigureWebTestClient
-class BeerEndpointTest extends Specification {
+class CustomerEndpointTest extends Specification {
     @Autowired
     WebTestClient client
 
-    def "list beers"() {
+    def "list customers"() {
         expect:
-        client.get().uri(BEER_PATH)
+        client.get().uri(CUSTOMER_PATH)
             .exchange()
             .expectStatus().isOk()
             .expectHeader().valueEquals("Content-Type", "application/json")
-            .expectBody().jsonPath('$.size()').isEqualTo(3)
+            .expectBody().jsonPath('$.size()').isEqualTo(2)
     }
 
-    def "get beers by style"() {
+    def "get customer by name"() {
         given:
-        final def STYLE = "TEST"
+        final def NAME = "Bobby Tables"
         def testDto = buildDto()
-        testDto.beerStyle = STYLE
+        testDto.customerName = NAME
 
-        client.post().uri(BEER_PATH)
-            .body(just(testDto), BeerDTO)
+        client.post().uri(CUSTOMER_PATH)
+            .body(just(testDto), CustomerDTO)
             .header("Content-Type", "application/json")
             .exchange()
 
         expect:
-        client.get().uri(fromPath(BEER_PATH).queryParam("style", STYLE).build().toUri())
+        client.get().uri(fromPath(CUSTOMER_PATH).queryParam("name", NAME).build().toUri())
             .exchange()
             .expectStatus().isOk()
             .expectHeader().valueEquals("Content-Type", "application/json")
@@ -51,99 +50,95 @@ class BeerEndpointTest extends Specification {
 
     def "get by id"() {
         given:
-        def beerDto = getSavedTestBeer()
+        def customerDto = getSavedTestCustomer()
 
         expect:
-        client.get().uri("$BEER_PATH/$beerDto.id")
+        client.get().uri("$CUSTOMER_PATH/$customerDto.id")
             .exchange()
             .expectStatus().isOk()
             .expectHeader().valueEquals("Content-Type", "application/json")
-            .expectBody(BeerDTO)
+            .expectBody(CustomerDTO)
     }
 
-    def "create a new beer"() {
+    def "create a new customer"() {
         expect:
-        client.post().uri(BEER_PATH)
-            .body(just(buildDto()), BeerDTO)
+        client.post().uri(CUSTOMER_PATH)
+            .body(just(buildDto()), CustomerDTO)
             .header("Content-Type", "application/json")
             .exchange()
             .expectStatus().isCreated()
             .expectHeader().exists("location")
     }
 
-    def "update a beer"() {
+    def "update a customer"() {
         given:
-        def dto = getSavedTestBeer()
+        def dto = getSavedTestCustomer()
 
         expect:
-        client.put().uri("$BEER_PATH/$dto.id")
-            .body(just(buildDto()), BeerDTO)
+        client.put().uri("$CUSTOMER_PATH/$dto.id")
+            .body(just(buildDto()), CustomerDTO)
             .exchange()
             .expectStatus().isNoContent()
     }
 
-    def "patch a beer"() {
+    def "patch a customer"() {
         given:
-        def dto = getSavedTestBeer()
+        def dto = getSavedTestCustomer()
 
         expect:
-        client.patch().uri("$BEER_PATH/$dto.id")
-            .body(just(buildDto()), BeerDTO)
+        client.patch().uri("$CUSTOMER_PATH/$dto.id")
+            .body(just(buildDto()), CustomerDTO)
             .exchange()
             .expectStatus().isNoContent()
     }
 
-    def "create a new beer but there's an error"() {
+    def "create a new customer but there's an error"() {
         given:
-        def beer = buildDto()
-        beer.beerName = ""
+        def customer = buildDto()
+        customer.customerName = ""
 
         expect:
-        client.post().uri(BEER_PATH)
-            .body(just(beer), BeerDTO)
+        client.post().uri(CUSTOMER_PATH)
+            .body(just(customer), CustomerDTO)
             .header("Content-Type", "application/json")
             .exchange()
             .expectStatus().isBadRequest()
     }
 
-    def "update a beer but there's an error"() {
+    def "update a customer but there's an error"() {
         given:
-        def beer = buildDto()
-        beer.beerStyle = ""
+        def customer = buildDto()
+        customer.customerName = ""
 
         expect:
-        client.put().uri("$BEER_PATH/1")
-            .body(just(beer), BeerDTO)
+        client.put().uri("$CUSTOMER_PATH/1")
+            .body(just(customer), CustomerDTO)
             .exchange()
             .expectStatus().isBadRequest()
     }
 
     def "get by id but there's an error"() {
         expect:
-        client.get().uri("$BEER_PATH/999")
+        client.get().uri("$CUSTOMER_PATH/999")
             .exchange()
             .expectStatus().isNotFound()
     }
 
-    def "update a beer that doesn't exist"() {
+    def "update a customer that doesn't exist"() {
         expect:
-        client.put().uri("$BEER_PATH/999")
-            .body(just(buildDto()), BeerDTO)
+        client.put().uri("$CUSTOMER_PATH/999")
+            .body(just(buildDto()), CustomerDTO)
             .exchange()
             .expectStatus().isNotFound()
-    }
-
-    def getSavedTestBeer() {
-        client.get().uri(BEER_PATH).exchange().returnResult(BeerDTO).getResponseBody().blockFirst()
     }
 
     def buildDto() {
-        BeerDTO.builder()
-            .beerName("Saporous")
-            .beerStyle("Sour")
-            .upc("123456")
-            .quantityOnHand(1)
-            .price(BigDecimal.TEN)
+        CustomerDTO.builder()
+            .customerName("Joan Rivers")
             .build()
+    }
+
+    def getSavedTestCustomer() {
+        client.get().uri(CUSTOMER_PATH).exchange().returnResult(CustomerDTO).getResponseBody().blockFirst()
     }
 }

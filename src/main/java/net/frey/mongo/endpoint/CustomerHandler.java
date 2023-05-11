@@ -10,9 +10,10 @@ import static org.springframework.web.reactive.function.server.ServerResponse.ok
 import static org.springframework.web.util.UriComponentsBuilder.fromPath;
 import static reactor.core.publisher.Mono.error;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import net.frey.mongo.model.BeerDTO;
-import net.frey.mongo.service.BeerService;
+import net.frey.mongo.model.CustomerDTO;
+import net.frey.mongo.service.CustomerService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -28,72 +29,75 @@ import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
-public class BeerHandler {
-    public static final String BEER_PATH = "/api/v3/beer";
-    public static final String ID_PATH = BEER_PATH + "/{id}";
+public class CustomerHandler {
+    public static final String CUSTOMER_PATH = "/api/v3/customer";
+    public static final String ID_PATH = CUSTOMER_PATH + "/{id}";
 
-    private final BeerService service;
+    private final CustomerService service;
     private final Validator validator;
 
     @Bean
-    public RouterFunction<ServerResponse> beerRoutes() {
-        return route().GET(BEER_PATH, this::listBeers)
-                .GET(ID_PATH, this::getBeerById)
-                .POST(BEER_PATH, accept(APPLICATION_JSON), this::createBeer)
-                .PUT(ID_PATH, accept(APPLICATION_JSON), this::updateBeer)
-                .PATCH(ID_PATH, accept(APPLICATION_JSON), this::patchBeer)
-                .DELETE(ID_PATH, this::deleteBeer)
+    public RouterFunction<ServerResponse> customerRoutes() {
+        return route().GET(CUSTOMER_PATH, this::listCustomers)
+                .GET(ID_PATH, this::getCustomerById)
+                .POST(CUSTOMER_PATH, accept(APPLICATION_JSON), this::createCustomer)
+                .PUT(ID_PATH, accept(APPLICATION_JSON), this::updateCustomer)
+                .PATCH(ID_PATH, accept(APPLICATION_JSON), this::patchCustomer)
+                .DELETE(ID_PATH, this::deleteCustomer)
                 .build();
     }
 
-    public Mono<ServerResponse> listBeers(ServerRequest request) {
-        Flux<BeerDTO> beerFlux =
-                request.queryParam("style").map(service::findByBeerStyle).orElseGet(service::listBeers);
+    private Mono<ServerResponse> listCustomers(ServerRequest request) {
 
-        return ok().body(beerFlux, BeerDTO.class);
+        Optional<String> nameParam = request.queryParam("name");
+
+        Flux<CustomerDTO> customerFlux =
+                nameParam.map(name -> service.findFirstByName(name).flux()).orElseGet(service::listCustomers);
+
+        return ok().body(customerFlux, CustomerDTO.class);
     }
 
-    public Mono<ServerResponse> getBeerById(ServerRequest request) {
+    private Mono<ServerResponse> getCustomerById(ServerRequest request) {
         return ok().body(
                         service.getById(request.pathVariable("id"))
                                 .switchIfEmpty(error(new ResponseStatusException(NOT_FOUND))),
-                        BeerDTO.class);
+                        CustomerDTO.class);
     }
 
-    public Mono<ServerResponse> createBeer(ServerRequest request) {
-        return service.saveBeer(request.bodyToMono(BeerDTO.class))
-                .doOnNext(this::validate)
-                .flatMap(beerDTO ->
-                        created(fromPath(ID_PATH).build(beerDTO.getId())).build());
-    }
-
-    public Mono<ServerResponse> updateBeer(ServerRequest request) {
+    private Mono<ServerResponse> updateCustomer(ServerRequest request) {
         String id = request.pathVariable("id");
 
-        return request.bodyToMono(BeerDTO.class)
+        return request.bodyToMono(CustomerDTO.class)
                 .doOnNext(this::validate)
                 .flatMap(findDto -> service.getById(id))
-                .map(dto -> service.updateBeer(id, dto))
+                .map(dto -> service.updateCustomer(id, dto))
                 .switchIfEmpty(error(new ResponseStatusException(NOT_FOUND)))
                 .flatMap(savedDto -> noContent().build());
     }
 
-    public Mono<ServerResponse> patchBeer(ServerRequest request) {
-        return request.bodyToMono(BeerDTO.class)
+    private Mono<ServerResponse> createCustomer(ServerRequest request) {
+        return service.saveCustomer(request.bodyToMono(CustomerDTO.class))
                 .doOnNext(this::validate)
-                .flatMap(dto -> service.patchBeer(request.pathVariable("id"), dto))
+                .flatMap(customerDTO ->
+                        created(fromPath(ID_PATH).build(customerDTO.getId())).build());
+    }
+
+    private Mono<ServerResponse> patchCustomer(ServerRequest request) {
+        return request.bodyToMono(CustomerDTO.class)
+                .doOnNext(this::validate)
+                .flatMap(dto -> service.patchCustomer(request.pathVariable("id"), dto))
                 .switchIfEmpty(error(new ResponseStatusException(NOT_FOUND)))
                 .flatMap(savedDto -> noContent().build());
     }
 
-    public Mono<ServerResponse> deleteBeer(ServerRequest request) {
+    private Mono<ServerResponse> deleteCustomer(ServerRequest request) {
         return service.getById(request.pathVariable("id"))
                 .switchIfEmpty(error(new ResponseStatusException(NOT_FOUND)))
                 .flatMap(dto -> service.deleteById(dto.getId()).then(noContent().build()));
     }
 
-    private void validate(BeerDTO dto) {
-        Errors errors = new BeanPropertyBindingResult(dto, "beerDto");
+    private void validate(CustomerDTO dto) {
+        Errors errors = new BeanPropertyBindingResult(dto, "customerDto");
 
         validator.validate(dto, errors);
 
