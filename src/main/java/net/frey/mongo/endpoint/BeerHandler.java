@@ -72,7 +72,7 @@ public class BeerHandler {
 
         return request.bodyToMono(BeerDTO.class)
                 .doOnNext(this::validate)
-                .map(dto -> service.updateBeer(id, dto))
+                .flatMap(dto -> service.updateBeer(id, dto))
                 .switchIfEmpty(error(new ResponseStatusException(NOT_FOUND)))
                 .flatMap(savedDto -> noContent().build());
     }
