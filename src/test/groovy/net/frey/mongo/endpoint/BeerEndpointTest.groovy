@@ -11,6 +11,7 @@ import spock.lang.Stepwise
 
 import static net.frey.mongo.endpoint.BeerHandler.BEER_PATH
 import static org.hamcrest.Matchers.equalTo
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockOAuth2Login
 import static org.springframework.web.util.UriComponentsBuilder.fromPath
 import static reactor.core.publisher.Mono.just
 
@@ -23,7 +24,9 @@ class BeerEndpointTest extends Specification {
 
     def "list beers"() {
         expect:
-        client.get().uri(BEER_PATH)
+        client
+            .mutateWith(mockOAuth2Login())
+            .get().uri(BEER_PATH)
             .exchange()
             .expectStatus().isOk()
             .expectHeader().valueEquals("Content-Type", "application/json")
@@ -36,13 +39,17 @@ class BeerEndpointTest extends Specification {
         def testDto = buildDto()
         testDto.beerStyle = STYLE
 
-        client.post().uri(BEER_PATH)
+        client
+            .mutateWith(mockOAuth2Login())
+            .post().uri(BEER_PATH)
             .body(just(testDto), BeerDTO)
             .header("Content-Type", "application/json")
             .exchange()
 
         expect:
-        client.get().uri(fromPath(BEER_PATH).queryParam("style", STYLE).build().toUri())
+        client
+            .mutateWith(mockOAuth2Login())
+            .get().uri(fromPath(BEER_PATH).queryParam("style", STYLE).build().toUri())
             .exchange()
             .expectStatus().isOk()
             .expectHeader().valueEquals("Content-Type", "application/json")
@@ -54,7 +61,9 @@ class BeerEndpointTest extends Specification {
         def beerDto = getSavedTestBeer()
 
         expect:
-        client.get().uri("$BEER_PATH/$beerDto.id")
+        client
+            .mutateWith(mockOAuth2Login())
+            .get().uri("$BEER_PATH/$beerDto.id")
             .exchange()
             .expectStatus().isOk()
             .expectHeader().valueEquals("Content-Type", "application/json")
@@ -63,7 +72,9 @@ class BeerEndpointTest extends Specification {
 
     def "create a new beer"() {
         expect:
-        client.post().uri(BEER_PATH)
+        client
+            .mutateWith(mockOAuth2Login())
+            .post().uri(BEER_PATH)
             .body(just(buildDto()), BeerDTO)
             .header("Content-Type", "application/json")
             .exchange()
@@ -76,7 +87,9 @@ class BeerEndpointTest extends Specification {
         def dto = getSavedTestBeer()
 
         expect:
-        client.put().uri("$BEER_PATH/$dto.id")
+        client
+            .mutateWith(mockOAuth2Login())
+            .put().uri("$BEER_PATH/$dto.id")
             .body(just(buildDto()), BeerDTO)
             .exchange()
             .expectStatus().isNoContent()
@@ -87,7 +100,9 @@ class BeerEndpointTest extends Specification {
         def dto = getSavedTestBeer()
 
         expect:
-        client.patch().uri("$BEER_PATH/$dto.id")
+        client
+            .mutateWith(mockOAuth2Login())
+            .patch().uri("$BEER_PATH/$dto.id")
             .body(just(buildDto()), BeerDTO)
             .exchange()
             .expectStatus().isNoContent()
@@ -99,7 +114,9 @@ class BeerEndpointTest extends Specification {
         beer.beerName = ""
 
         expect:
-        client.post().uri(BEER_PATH)
+        client
+            .mutateWith(mockOAuth2Login())
+            .post().uri(BEER_PATH)
             .body(just(beer), BeerDTO)
             .header("Content-Type", "application/json")
             .exchange()
@@ -112,7 +129,9 @@ class BeerEndpointTest extends Specification {
         beer.beerStyle = ""
 
         expect:
-        client.put().uri("$BEER_PATH/1")
+        client
+            .mutateWith(mockOAuth2Login())
+            .put().uri("$BEER_PATH/1")
             .body(just(beer), BeerDTO)
             .exchange()
             .expectStatus().isBadRequest()
@@ -120,21 +139,31 @@ class BeerEndpointTest extends Specification {
 
     def "get by id but there's an error"() {
         expect:
-        client.get().uri("$BEER_PATH/999")
+        client
+            .mutateWith(mockOAuth2Login())
+            .get().uri("$BEER_PATH/999")
             .exchange()
             .expectStatus().isNotFound()
     }
 
     def "update a beer that doesn't exist"() {
         expect:
-        client.put().uri("$BEER_PATH/999")
+        client
+            .mutateWith(mockOAuth2Login())
+            .put().uri("$BEER_PATH/999")
             .body(just(buildDto()), BeerDTO)
             .exchange()
             .expectStatus().isNotFound()
     }
 
     def getSavedTestBeer() {
-        client.get().uri(BEER_PATH).exchange().returnResult(BeerDTO).getResponseBody().blockFirst()
+        client
+            .mutateWith(mockOAuth2Login())
+            .get().uri(BEER_PATH)
+            .exchange()
+            .returnResult(BeerDTO)
+            .getResponseBody()
+            .blockFirst()
     }
 
     def buildDto() {
